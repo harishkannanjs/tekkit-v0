@@ -77,25 +77,155 @@ function copyAssetDirectories() {
 }
 
 function createVendorScripts() {
-  console.log('Creating vendor script stubs...');
+  console.log('Creating functional vendor scripts...');
   
   const distJsDir = path.join('dist', 'js');
   if (!fs.existsSync(distJsDir)) {
     fs.mkdirSync(distJsDir, { recursive: true });
   }
   
-  // Create minimal vendor script stubs that don't break the page
+  // Create functional vendor scripts that provide proper functionality
   const vendorScripts = {
-    'bricks.min.js': '// Bricks theme functionality handled by external CDN and inline scripts',
-    'gtm.js': '// Google Tag Manager loaded via external script tags in HTML head', 
-    'plausible.outbound-links.js': '// Plausible analytics loaded via external script tags in HTML head',
-    'l.js': '// Additional scripts loaded via external sources'
+    'bricks.min.js': `
+// Bricks theme functionality - minimal implementation for core features
+(function() {
+  'use strict';
+  
+  // Initialize bricks globals if not already present
+  if (typeof window.bricksData === 'undefined') {
+    console.warn('bricksData not found - some Bricks features may not work properly');
+    return;
+  }
+  
+  // Basic Bricks initialization
+  window.bricks = window.bricks || {};
+  
+  // Initialize mobile menu functionality
+  function initBricksMobileMenu() {
+    const mobileToggle = document.querySelector('.bricks-mobile-menu-toggle');
+    const mobileMenu = document.querySelector('.bricks-mobile-menu-wrapper');
+    const overlay = document.querySelector('.bricks-mobile-menu-overlay');
+    
+    if (mobileToggle && mobileMenu && overlay) {
+      mobileToggle.addEventListener('click', function() {
+        const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+        mobileToggle.setAttribute('aria-expanded', (!isExpanded).toString());
+        mobileMenu.classList.toggle('active', !isExpanded);
+        overlay.classList.toggle('active', !isExpanded);
+        document.body.classList.toggle('mobile-menu-open', !isExpanded);
+      });
+      
+      overlay.addEventListener('click', function() {
+        mobileToggle.setAttribute('aria-expanded', 'false');
+        mobileMenu.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.classList.remove('mobile-menu-open');
+      });
+    }
+  }
+  
+  // Initialize submenu functionality
+  function initBricksSubmenus() {
+    const submenuToggles = document.querySelectorAll('.brx-submenu-toggle button');
+    submenuToggles.forEach(function(toggle) {
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+        const submenu = toggle.parentElement?.querySelector('.sub-menu');
+        
+        toggle.setAttribute('aria-expanded', (!isExpanded).toString());
+        if (submenu) {
+          submenu.classList.toggle('show', !isExpanded);
+        }
+      });
+    });
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      initBricksMobileMenu();
+      initBricksSubmenus();
+    });
+  } else {
+    initBricksMobileMenu();
+    initBricksSubmenus();
+  }
+  
+  console.log('Bricks minimal functionality initialized');
+})();`,
+    
+    'gtm.js': `
+// Google Tag Manager integration - ensures gtag is available
+(function() {
+  'use strict';
+  
+  // GTM loads from external CDN, this ensures proper initialization
+  if (typeof window.gtag === 'undefined') {
+    window.gtag = function() {
+      if (window.dataLayer) {
+        window.dataLayer.push(arguments);
+      }
+    };
+  }
+  
+  // Ensure dataLayer exists
+  window.dataLayer = window.dataLayer || [];
+  
+  console.log('GTM integration initialized');
+})();`,
+    
+    'plausible.outbound-links.js': `
+// Plausible Analytics outbound links tracking
+(function() {
+  'use strict';
+  
+  // Ensure plausible function exists
+  if (typeof window.plausible === 'undefined') {
+    window.plausible = window.plausible || function() { 
+      (window.plausible.q = window.plausible.q || []).push(arguments);
+    };
+  }
+  
+  // Track outbound links
+  function trackOutboundLinks() {
+    document.addEventListener('click', function(e) {
+      const link = e.target.closest('a');
+      if (link && link.href && link.hostname !== window.location.hostname) {
+        window.plausible('Outbound Link: Click', { props: { url: link.href } });
+      }
+    });
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', trackOutboundLinks);
+  } else {
+    trackOutboundLinks();
+  }
+  
+  console.log('Plausible outbound link tracking initialized');
+})();`,
+    
+    'l.js': `
+// Crisp Chat Integration
+(function() {
+  'use strict';
+  
+  // Initialize Crisp if not already loaded
+  if (typeof window.$crisp !== 'undefined' && typeof window.CRISP_WEBSITE_ID !== 'undefined') {
+    // Crisp is initialized via external script, this ensures proper setup
+    window.$crisp.push(['safe', true]);
+    console.log('Crisp chat integration initialized');
+  } else {
+    console.warn('Crisp configuration not found');
+  }
+})();`
   };
   
   for (const [filename, content] of Object.entries(vendorScripts)) {
     const filePath = path.join(distJsDir, filename);
     fs.writeFileSync(filePath, content);
-    console.log(`Created vendor script stub: ${filename}`);
+    console.log(`Created functional vendor script: ${filename}`);
   }
 }
 

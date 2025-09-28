@@ -75,43 +75,14 @@ function updateImagesForTheme(theme: 'light' | 'dark'): void {
 }
 
 function initializeMobileMenu(): void {
-  const mobileToggle = document.querySelector('.bricks-mobile-menu-toggle');
-  const mobileMenu = document.querySelector('.bricks-mobile-menu-wrapper');
-  const overlay = document.querySelector('.bricks-mobile-menu-overlay');
-  
-  if (mobileToggle && mobileMenu && overlay) {
-    mobileToggle.addEventListener('click', () => {
-      const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
-      
-      mobileToggle.setAttribute('aria-expanded', (!isExpanded).toString());
-      mobileMenu.classList.toggle('active', !isExpanded);
-      overlay.classList.toggle('active', !isExpanded);
-      document.body.classList.toggle('mobile-menu-open', !isExpanded);
-    });
-    
-    overlay.addEventListener('click', () => {
-      mobileToggle.setAttribute('aria-expanded', 'false');
-      mobileMenu.classList.remove('active');
-      overlay.classList.remove('active');
-      document.body.classList.remove('mobile-menu-open');
-    });
-  }
+  // Mobile menu functionality is now handled by the Bricks vendor script
+  // This ensures no duplication and keeps all Bricks functionality in one place
+  console.log('Mobile menu functionality delegated to Bricks vendor script');
 }
 
 // Initialize submenu toggles
 export function initializeSubmenus(): void {
-  const submenuToggles = document.querySelectorAll('.brx-submenu-toggle button');
-  
-  submenuToggles.forEach(toggle => {
-    toggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-      const submenu = toggle.parentElement?.querySelector('.sub-menu');
-      
-      toggle.setAttribute('aria-expanded', (!isExpanded).toString());
-      if (submenu) {
-        submenu.classList.toggle('show', !isExpanded);
-      }
-    });
-  });
+  // Submenu functionality is now handled by the Bricks vendor script
+  // This ensures no duplication and keeps all Bricks functionality in one place
+  console.log('Submenu functionality delegated to Bricks vendor script');
 }
