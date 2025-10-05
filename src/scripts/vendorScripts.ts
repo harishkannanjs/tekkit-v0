@@ -16,25 +16,11 @@ export function initializeVendorScripts(): void {
     console.log('Crisp chat initialized');
   }
 
-  // Initialize Bricks theme functionality (bricks.min.js is loaded externally)
-  initializeBricksFramework();
-
   // Initialize theme toggle functionality
   initializeThemeToggle();
 
   // Initialize mobile menu functionality
   initializeMobileMenu();
-}
-
-function initializeBricksFramework(): void {
-  // Bricks framework initialization
-  // The bricks.min.js file is loaded as a script tag and provides core theme functionality
-  // This function ensures any Bricks-specific behaviors are properly initialized
-  
-  // Initialize any Bricks-specific features that need TypeScript handling
-  if (typeof (window as any).bricks !== 'undefined') {
-    console.log('Bricks framework initialized');
-  }
 }
 
 function initializeThemeToggle(): void {
@@ -75,14 +61,43 @@ function updateImagesForTheme(theme: 'light' | 'dark'): void {
 }
 
 function initializeMobileMenu(): void {
-  // Mobile menu functionality is now handled by the Bricks vendor script
-  // This ensures no duplication and keeps all Bricks functionality in one place
-  console.log('Mobile menu functionality delegated to Bricks vendor script');
+  const mobileToggle = document.querySelector('.bricks-mobile-menu-toggle');
+  const mobileMenu = document.querySelector('.bricks-mobile-menu-wrapper');
+  const overlay = document.querySelector('.bricks-mobile-menu-overlay');
+  
+  if (mobileToggle && mobileMenu && overlay) {
+    mobileToggle.addEventListener('click', () => {
+      const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+      
+      mobileToggle.setAttribute('aria-expanded', (!isExpanded).toString());
+      mobileMenu.classList.toggle('active', !isExpanded);
+      overlay.classList.toggle('active', !isExpanded);
+      document.body.classList.toggle('mobile-menu-open', !isExpanded);
+    });
+    
+    overlay.addEventListener('click', () => {
+      mobileToggle.setAttribute('aria-expanded', 'false');
+      mobileMenu.classList.remove('active');
+      overlay.classList.remove('active');
+      document.body.classList.remove('mobile-menu-open');
+    });
+  }
 }
 
 // Initialize submenu toggles
 export function initializeSubmenus(): void {
-  // Submenu functionality is now handled by the Bricks vendor script
-  // This ensures no duplication and keeps all Bricks functionality in one place
-  console.log('Submenu functionality delegated to Bricks vendor script');
+  const submenuToggles = document.querySelectorAll('.brx-submenu-toggle button');
+  
+  submenuToggles.forEach(toggle => {
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      const submenu = toggle.parentElement?.querySelector('.sub-menu');
+      
+      toggle.setAttribute('aria-expanded', (!isExpanded).toString());
+      if (submenu) {
+        submenu.classList.toggle('show', !isExpanded);
+      }
+    });
+  });
 }
