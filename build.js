@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-
 const esbuild = require('esbuild');
 const fs = require('fs');
 const path = require('path');
+
+// Output directory changed from "dist" → "public"
+const OUTPUT_DIR = 'public';
 
 // Build configuration (browser bundle)
 const buildConfig = {
@@ -11,7 +13,7 @@ const buildConfig = {
   minify: true,
   platform: 'browser',
   target: 'es2020',
-  outfile: 'dist/js/main.js',
+  outfile: path.join(OUTPUT_DIR, 'js', 'main.js'),
   sourcemap: true,
   format: 'iife',
   external: [],
@@ -25,7 +27,7 @@ const serverBuildConfig = {
   minify: false,
   platform: 'node',
   target: 'node20',
-  outfile: 'dist/server.js',
+  outfile: path.join(OUTPUT_DIR, 'server.js'),
   sourcemap: true,
   format: 'cjs',
   external: [],
@@ -34,80 +36,73 @@ const serverBuildConfig = {
 
 // Copy static assets and create processed files
 function copyStaticAssets() {
-  // Create dist directory if it doesn't exist
-  if (!fs.existsSync('dist')) {
-    fs.mkdirSync('dist', { recursive: true });
+  // Create output directory if it doesn't exist
+  if (!fs.existsSync(OUTPUT_DIR)) {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
-  
-  // Copy fonts and images directories to dist
+
+  // Copy fonts and images directories to output
   copyAssetDirectories();
-  
+
   // Create global CSS file
   createGlobalCSS();
-  
-  // Create HTML file from original content
+
+  // Create HTML file
   createHTMLFile();
-  
+
   console.log('Assets processed successfully.');
 }
 
 function copyAssetDirectories() {
   console.log('Copying asset directories...');
-  
+
   const assetDirs = ['fonts', 'images'];
-  
+
   for (const dir of assetDirs) {
-    // First check if assets exist in project root
     const rootSrcPath = path.join('.', dir);
-    // Then check if assets exist in dist already
-    const distSrcPath = path.join('dist', dir);
-    const destPath = path.join('dist', dir);
-    
+    const outSrcPath = path.join(OUTPUT_DIR, dir);
+    const destPath = path.join(OUTPUT_DIR, dir);
+
     let srcPath = null;
-    
-    // Prefer root directory assets if they exist
+
     if (fs.existsSync(rootSrcPath)) {
       srcPath = rootSrcPath;
-    } else if (fs.existsSync(distSrcPath)) {
-      srcPath = distSrcPath;
+    } else if (fs.existsSync(outSrcPath)) {
+      srcPath = outSrcPath;
     }
-    
+
     if (srcPath) {
-      // Remove existing destination if it exists
       if (fs.existsSync(destPath)) {
         fs.rmSync(destPath, { recursive: true, force: true });
       }
-      
-      // Copy from source to destination
+
       copyDirRecursive(srcPath, destPath);
       console.log(`Copied ${dir} from ${srcPath} to ${destPath}`);
     } else {
-      console.warn(`Asset directory ${dir} not found in project root or dist`);
+      console.warn(`Asset directory ${dir} not found in project root or ${OUTPUT_DIR}`);
     }
   }
-  
-  // Create vendor JavaScript files to maintain functionality
+
   createVendorScripts();
 }
 
 function createVendorScripts() {
   console.log('Creating vendor script stubs...');
-  
-  const distJsDir = path.join('dist', 'js');
-  if (!fs.existsSync(distJsDir)) {
-    fs.mkdirSync(distJsDir, { recursive: true });
+
+  const jsDir = path.join(OUTPUT_DIR, 'js');
+  if (!fs.existsSync(jsDir)) {
+    fs.mkdirSync(jsDir, { recursive: true });
   }
-  
-  // Create minimal vendor script stubs that don't break the page
+
   const vendorScripts = {
     'bricks.min.js': '// Bricks theme functionality handled by external CDN and inline scripts',
-    'gtm.js': '// Google Tag Manager loaded via external script tags in HTML head', 
+    'gtm.js': '// Google Tag Manager loaded via external script tags in HTML head',
     'plausible.outbound-links.js': '// Plausible analytics loaded via external script tags in HTML head',
-    'l.js': '// Additional scripts loaded via external sources'
+    'l.js': '// Additional scripts loaded via external sources',
   };
-  
+
   for (const [filename, content] of Object.entries(vendorScripts)) {
-    const filePath = path.join(distJsDir, filename);
+    const filePath = path.join(jsDir, filename);
     fs.writeFileSync(filePath, content);
     console.log(`Created vendor script stub: ${filename}`);
   }
@@ -115,18 +110,17 @@ function createVendorScripts() {
 
 function createGlobalCSS() {
   console.log('Creating global CSS file...');
-  
-  const distCssDir = path.join('dist', 'css');
-  if (!fs.existsSync(distCssDir)) {
-    fs.mkdirSync(distCssDir, { recursive: true });
+
+  const cssDir = path.join(OUTPUT_DIR, 'css');
+  if (!fs.existsSync(cssDir)) {
+    fs.mkdirSync(cssDir, { recursive: true });
   }
-  
-  // Read the consolidated CSS from src/styles/global.css
+
   const globalCSSPath = path.join('src', 'styles', 'global.css');
   if (fs.existsSync(globalCSSPath)) {
     const globalCSS = fs.readFileSync(globalCSSPath, 'utf8');
-    fs.writeFileSync(path.join(distCssDir, 'styles.css'), globalCSS);
-    console.log('Global CSS created at dist/css/styles.css');
+    fs.writeFileSync(path.join(cssDir, 'styles.css'), globalCSS);
+    console.log(`Global CSS created at ${OUTPUT_DIR}/css/styles.css`);
   } else {
     console.warn('Global CSS file not found at src/styles/global.css');
   }
@@ -134,50 +128,46 @@ function createGlobalCSS() {
 
 function createHTMLFile() {
   console.log('Creating HTML file...');
-  
-  // Read the original HTML content
+
   const originalHTMLPath = path.join('src', 'content.html');
   if (!fs.existsSync(originalHTMLPath)) {
     console.error('Original HTML content not found at src/content.html');
     return;
   }
-  
+
   const originalHTML = fs.readFileSync(originalHTMLPath, 'utf8');
-  
-  // Replace multiple CSS references with single global stylesheet
+
   let processedHTML = originalHTML
-    // Remove individual CSS links
     .replace(/<link[^>]*href="css\/frontend-layer\.min\.css"[^>]*>/g, '')
     .replace(/<link[^>]*href="css\/font-awesome-6-brands-layer\.min\.css"[^>]*>/g, '')
     .replace(/<link[^>]*href="css\/font-awesome-6-layer\.min\.css"[^>]*>/g, '')
     .replace(/<link[^>]*href="css\/ionicons-layer\.min\.css"[^>]*>/g, '')
     .replace(/<link[^>]*href="css\/style\.css"[^>]*>/g, '')
-    // Add global stylesheet
-    .replace(/<link rel="dns-prefetch" href="\/\/www\.googletagmanager\.com">/, 
-             '<link rel="dns-prefetch" href="//www.googletagmanager.com">\n\n<link rel="stylesheet" id="global-styles-css" href="css/styles.css" media="all">');
-  
-  // Keep vendor scripts for full functionality, add TypeScript main.js
-  processedHTML = processedHTML
-    // Add TypeScript main.js before vendor scripts
-    .replace(/<script[^>]*src="js\/bricks\.min\.js"[^>]*><\/script>/, 
-             '<script src="js/main.js"></script>\n<script src="js/bricks.min.js"></script>');
-  
-  fs.writeFileSync(path.join('dist', 'index.html'), processedHTML);
+    .replace(
+      /<link rel="dns-prefetch" href="\/\/www\.googletagmanager\.com">/,
+      '<link rel="dns-prefetch" href="//www.googletagmanager.com">\n\n<link rel="stylesheet" id="global-styles-css" href="css/styles.css" media="all">'
+    );
+
+  processedHTML = processedHTML.replace(
+    /<script[^>]*src="js\/bricks\.min\.js"[^>]*><\/script>/,
+    '<script src="js/main.js"></script>\n<script src="js/bricks.min.js"></script>'
+  );
+
+  fs.writeFileSync(path.join(OUTPUT_DIR, 'index.html'), processedHTML);
   console.log('HTML file created with TypeScript + vendor script integration.');
 }
 
 function copyDirRecursive(src, dest) {
-  // Ensure destination directory exists
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
   }
-  
+
   const entries = fs.readdirSync(src, { withFileTypes: true });
-  
-  entries.forEach(entry => {
+
+  entries.forEach((entry) => {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
-    
+
     if (entry.isDirectory()) {
       if (!fs.existsSync(destPath)) {
         fs.mkdirSync(destPath, { recursive: true });
@@ -199,11 +189,11 @@ async function build() {
     console.log('Building Node server...');
     await esbuild.build(serverBuildConfig);
     console.log('Node server build complete.');
-    
+
     console.log('Processing static assets...');
     copyStaticAssets();
     console.log('Assets processing completed.');
-    
+
     console.log('Build process completed successfully!');
   } catch (error) {
     console.error('Build failed:', error);
