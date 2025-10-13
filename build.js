@@ -4,7 +4,7 @@ const esbuild = require('esbuild');
 const fs = require('fs');
 const path = require('path');
 
-// Build configuration
+// Build configuration (browser bundle)
 const buildConfig = {
   entryPoints: ['src/main.ts'],
   bundle: true,
@@ -14,6 +14,20 @@ const buildConfig = {
   outfile: 'dist/js/main.js',
   sourcemap: true,
   format: 'iife',
+  external: [],
+  write: true,
+};
+
+// Build configuration (node server)
+const serverBuildConfig = {
+  entryPoints: ['server.ts'],
+  bundle: true,
+  minify: false,
+  platform: 'node',
+  target: 'node20',
+  outfile: 'dist/server.js',
+  sourcemap: true,
+  format: 'cjs',
   external: [],
   write: true,
 };
@@ -178,9 +192,13 @@ function copyDirRecursive(src, dest) {
 // Main build function
 async function build() {
   try {
-    console.log('Building TypeScript...');
+    console.log('Building browser bundle...');
     await esbuild.build(buildConfig);
-    console.log('TypeScript build complete.');
+    console.log('Browser bundle build complete.');
+
+    console.log('Building Node server...');
+    await esbuild.build(serverBuildConfig);
+    console.log('Node server build complete.');
     
     console.log('Processing static assets...');
     copyStaticAssets();
